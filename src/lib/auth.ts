@@ -1,7 +1,7 @@
 import { AuthToken } from '@/types';
 import 'dotenv/config';
 
-const TOKEN_KEY = process.env.NAME_TOKEN!;
+const TOKEN_KEY = process.env.NEXT_PUBLIC_NAME_TOKEN!;
 
 export const setToken = (token: AuthToken) => {
   if (typeof window !== 'undefined') {
