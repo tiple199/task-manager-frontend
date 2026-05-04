@@ -8,6 +8,7 @@ import { authApi } from '@/features/auth/api';
 import { getToken } from '@/lib/auth';
 import { LogOut, CheckSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 function Topbar() {
   const { user, logout } = useAuthStore();
@@ -36,12 +37,12 @@ function Topbar() {
         <div className="flex h-16 items-center justify-between gap-4">
 
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl gradient-brand shadow-[0_2px_8px_rgba(99,102,241,0.4)]">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl gradient-brand shadow-[0_2px_8px_rgba(99,102,241,0.4)] group-hover:shadow-[0_4px_12px_rgba(99,102,241,0.5)] transition-shadow">
               <CheckSquare className="h-4 w-4 text-white" />
             </div>
             <span className="text-xl font-extrabold gradient-text tracking-tight">TaskManager</span>
-          </div>
+          </Link>
 
           {/* Right: User + logout */}
           <div className="flex items-center gap-3">

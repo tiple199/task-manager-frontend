@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useTasks, useDeleteTask } from '../hooks';
+import { useTasks, useDeleteTask, useQuickStatusUpdate } from '../hooks';
 import { TaskModal } from './TaskModal';
 import { Task } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Plus, Search, Edit2, Trash2, AlertCircle,
   SlidersHorizontal, Calendar, ChevronLeft, ChevronRight,
-  ChevronsLeft, ChevronsRight,
+  ChevronsLeft, ChevronsRight, CheckCircle2, Circle, Clock, Eye, EyeOff,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,7 @@ function buildPageWindow(current: number, total: number): (number | '...')[] {
 }
 
 export function TaskList() {
+  const [showCompleted, setShowCompleted] = useState(false);
   const [params, setParams] = useState({
     page: 1, limit: 10 as PageSize,
     search: '', status: '', priority: '', sort: 'deadline',
@@ -43,8 +44,16 @@ export function TaskList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const { data, isLoading, isError } = useTasks(params);
+  // Khi user chưa chọn status cụ thể trong dropdown:
+  //   showCompleted = false → chỉ hiện task chưa hoàn thành (not_completed)
+  //   showCompleted = true  → chỉ hiện task đã hoàn thành (completed)
+  const effectiveStatus = params.status !== ''
+    ? params.status
+    : showCompleted ? 'completed' : 'not_completed';
+
+  const { data, isLoading, isError } = useTasks({ ...params, status: effectiveStatus });
   const deleteMutation = useDeleteTask();
+  const quickStatusMutation = useQuickStatusUpdate();
 
   const handleEdit    = (task: Task)                        => { setEditingTask(task); setIsModalOpen(true); };
   const handleAddNew  = ()                                   => { setEditingTask(null); setIsModalOpen(true); };
@@ -53,17 +62,27 @@ export function TaskList() {
     if (confirm('Are you sure you want to delete this task?')) deleteMutation.mutate(id.toString());
   };
 
+  const nextStatus = (current: string): Task['status'] => {
+    if (current === 'pending')     return 'in_progress';
+    if (current === 'in_progress') return 'completed';
+    return 'pending';
+  };
+
+  const handleQuickStatus = (task: Task, e: React.MouseEvent) => {
+    e.stopPropagation();
+    quickStatusMutation.mutate({
+      id: task.id.toString(),
+      status: nextStatus(task.status),
+    });
+  };
+
   const priorityConfig: Record<string, { label: string; dot: string; badge: string }> = {
     high:   { label: 'High',   dot: 'bg-rose-500',  badge: 'bg-rose-50 text-rose-600 border-rose-200' },
     medium: { label: 'Medium', dot: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 border-amber-200' },
     low:    { label: 'Low',    dot: 'bg-sky-500',   badge: 'bg-sky-50 text-sky-600 border-sky-200' },
   };
 
-  const statusConfig: Record<string, { dot: string }> = {
-    completed:   { dot: 'bg-emerald-500' },
-    in_progress: { dot: 'bg-indigo-500' },
-    pending:     { dot: 'bg-orange-400' },
-  };
+
 
   const formatDeadline = (dateString: string) => {
     const date = new Date(dateString);
@@ -94,10 +113,29 @@ export function TaskList() {
             {data ? `${data.count} task${data.count !== 1 ? 's' : ''} total` : 'Loading…'}
           </p>
         </div>
-        <Button onClick={handleAddNew} size="lg" className="shrink-0">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Task
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setShowCompleted((v) => !v);
+              setParams((p) => ({ ...p, status: '', page: 1 }));
+            }}
+            className={cn(
+              'gap-2 text-sm font-medium transition-colors',
+              showCompleted
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                : 'text-slate-500'
+            )}
+          >
+            {showCompleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showCompleted ? 'Hide Completed' : 'Show Completed'}
+          </Button>
+          <Button onClick={handleAddNew} size="lg">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Task
+          </Button>
+        </div>
       </div>
 
       {/* ─── Filters ─── */}
@@ -174,9 +212,8 @@ export function TaskList() {
       ) : (
         <div className="flex flex-col gap-2.5">
           {data?.tasks.map((task, index) => {
-            const isCompleted = task.status?.toLowerCase() === 'completed';
-            const p = priorityConfig[task.priority?.toLowerCase()];
-            const s = statusConfig[task.status?.toLowerCase()];
+            const isCompleted = task.status != null ? String(task.status).toLowerCase() === 'completed' : false;
+            const p = task.priority != null ? priorityConfig[String(task.priority).toLowerCase()] : undefined;
 
             return (
               <div
@@ -191,7 +228,19 @@ export function TaskList() {
                 style={{ animationDelay: `${index * 40}ms` }}
                 onClick={() => handleEdit(task)}
               >
-                <div className={cn('w-2.5 h-2.5 rounded-full shrink-0', s?.dot ?? 'bg-slate-300')} />
+                {/* Quick-status button: click để cycle status */}
+                <button
+                  title={`Status: ${task.status} — Click to advance`}
+                  onClick={(e) => handleQuickStatus(task, e)}
+                  className={cn(
+                    'shrink-0 rounded-full transition-all duration-150 hover:scale-110 focus:outline-none',
+                    'w-6 h-6 flex items-center justify-center',
+                  )}
+                >
+                  {task.status === 'completed'  && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                  {task.status === 'in_progress' && <Clock         className="w-5 h-5 text-indigo-500" />}
+                  {task.status === 'pending'     && <Circle        className="w-5 h-5 text-orange-400" />}
+                </button>
 
                 <div className="flex-1 min-w-0">
                   <p className={cn('text-[15px] font-semibold text-slate-800 truncate', isCompleted && 'line-through text-slate-400')}>
@@ -381,6 +430,14 @@ export function TaskList() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         task={editingTask}
+        onSuccess={() => {
+          // Sau khi tạo task mới → reset về view mặc định để thấy task mới
+          // Khi edit task thì không cần reset
+          if (!editingTask) {
+            setShowCompleted(false);
+            setParams((p) => ({ ...p, status: '', page: 1 }));
+          }
+        }}
       />
     </div>
   );

@@ -6,9 +6,15 @@ interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   task?: Task | null;
+  onSuccess?: () => void;
 }
 
-export function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, task, onSuccess }: TaskModalProps) {
+  const handleSuccess = () => {
+    onClose();
+    onSuccess?.();
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -17,7 +23,7 @@ export function TaskModal({ isOpen, onClose, task }: TaskModalProps) {
     >
       <TaskForm
         initialData={task || undefined}
-        onSuccess={onClose}
+        onSuccess={handleSuccess}
         onCancel={onClose}
       />
     </Modal>
