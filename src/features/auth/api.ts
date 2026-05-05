@@ -13,8 +13,8 @@ export const authApi = {
   },
 
   login: async (data: any) => {
-    const res = await apiClient.post<ApiResponse<{ accessToken: AuthToken }>>('/login', data);
-    // login response data has specific shape: { data: { accessToken: { accessToken, refreshToken } } }
+    const res = await apiClient.post<ApiResponse<AuthToken>>('/login', data);
+    // login response: { success: true, data: { accessToken, refreshToken } }
     return res.data;
   },
 
@@ -34,8 +34,12 @@ export const authApi = {
     return res.data;
   },
 
-  logout: async (refreshToken: string) => {
-    const res = await apiClient.post<ApiResponse<null>>('/logout', { refreshToken });
+  logout: async (accessToken: string, refreshToken: string) => {
+    const res = await apiClient.post<ApiResponse<null>>(
+      '/logout',
+      { refreshToken },
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
     return res.data;
   },
 

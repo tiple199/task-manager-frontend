@@ -73,14 +73,16 @@ apiClient.interceptors.response.use(
           refreshToken: currentToken.refreshToken,
         });
         
-        // Success shape: { success: true, data: { accessToken: string } }
-        // We will keep the old refreshToken and update the accessToken
+        // Success shape: { success: true, data: { accessToken: string, refreshToken: string } }
+        // Token rotation: backend returns BOTH new tokens — must save both
         const newAccessToken = res.data?.data?.accessToken;
+        const newRefreshToken = res.data?.data?.refreshToken;
         
         if (newAccessToken) {
           const newToken = {
             accessToken: newAccessToken,
-            refreshToken: currentToken.refreshToken,
+            // Use new refreshToken if provided (rotation), otherwise fall back to old one
+            refreshToken: newRefreshToken ?? currentToken.refreshToken,
           };
           setToken(newToken);
           

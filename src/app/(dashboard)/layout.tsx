@@ -16,9 +16,9 @@ function Topbar() {
 
   const handleLogout = async () => {
     const token = getToken();
-    if (token?.refreshToken) {
+    if (token?.accessToken && token?.refreshToken) {
       try {
-        await authApi.logout(token.refreshToken);
+        await authApi.logout(token.accessToken, token.refreshToken);
       } catch (err) {
         console.error('Logout error', err);
       }

@@ -40,9 +40,11 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       const res = await authApi.login({ email: data.email, password: data.password });
-      const tokenObj = res.data?.accessToken;
-      if (tokenObj) {
-        setToken({ accessToken: tokenObj.accessToken, refreshToken: tokenObj.refreshToken });
+      // New backend response: { success: true, data: { accessToken, refreshToken } }
+      const accessToken = res.data?.accessToken;
+      const refreshToken = res.data?.refreshToken;
+      if (accessToken) {
+        setToken({ accessToken, refreshToken: refreshToken ?? '' });
         setUser({ userId: 'temp', email: data.email });
         toast.success(res.message || 'Login successful!');
       }
