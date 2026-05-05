@@ -60,8 +60,8 @@ apiClient.interceptors.response.use(
 
       const currentToken = getToken();
 
-      if (!currentToken?.refreshToken) {
-        // No refresh token available, clear session and go to login
+      if (!currentToken?.refreshToken || currentToken.refreshToken.trim() === '') {
+        // No refresh token available (e.g. Google login without rotation support), clear session and redirect
         clearToken();
         isRefreshing = false;
         if (typeof window !== 'undefined') window.location.href = '/login';

@@ -41,8 +41,22 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (!mounted || isAuthenticated) {
-    return null; // or a loader
+  // Show loader before mount to prevent hydration mismatch or flash
+  if (!mounted) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  // Already authenticated — show loader while redirect is in progress
+  if (isAuthenticated) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
   }
 
   return <>{children}</>;

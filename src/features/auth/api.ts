@@ -19,8 +19,8 @@ export const authApi = {
   },
 
   googleLogin: async (idToken: string) => {
-    const res = await apiClient.post<{ message: string; token: string; user: User }>('/google-login', { idToken });
-    // Note: This response shape is different, it directly returns token string, not a nested object
+    const res = await apiClient.post<{ message: string; token: string; refreshToken?: string; user: User }>('/google-login', { idToken });
+    // Note: token = accessToken. refreshToken may be returned if backend supports token rotation for Google auth
     return res.data;
   },
 

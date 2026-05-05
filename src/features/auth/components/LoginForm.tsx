@@ -12,6 +12,7 @@ import { useAuthStore } from '../store';
 import { setToken } from '@/lib/auth';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { GoogleLogin } from '@react-oauth/google';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -27,6 +28,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const setUser = useAuthStore((state) => state.setUser);
+  const router = useRouter();
 
   const {
     register,
@@ -47,6 +49,8 @@ export function LoginForm() {
         setToken({ accessToken, refreshToken: refreshToken ?? '' });
         setUser({ userId: 'temp', email: data.email });
         toast.success(res.message || 'Login successful!');
+        // Explicitly redirect — prevents race condition with PublicOnlyRoute's useEffect
+        router.replace('/dashboard');
       }
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.response?.data?.errors?.[0]?.message || 'Login failed';
@@ -133,9 +137,13 @@ export function LoginForm() {
                 setIsLoading(true);
                 try {
                   const res = await authApi.googleLogin(credentialResponse.credential);
-                  setToken({ accessToken: res.token, refreshToken: '' });
+                  // Save refreshToken if backend returns one (supports token rotation)
+                  // Falls back to empty string if backend doesn't return a refreshToken for Google auth
+                  setToken({ accessToken: res.token, refreshToken: res.refreshToken ?? '' });
                   setUser(res.user);
                   toast.success(res.message || 'Google login successful!');
+                  // Explicitly redirect after Google login
+                  router.replace('/dashboard');
                 } catch (err: any) {
                   const errorMsg = err.response?.data?.message || 'Google login failed';
                   toast.error(errorMsg);
